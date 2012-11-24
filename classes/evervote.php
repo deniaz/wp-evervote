@@ -98,7 +98,6 @@ class EverVote
     /**
      * Includes the template to display a button and a vote on page load
      * 
-     * @todo Implement Theme-Override
      * @return void
      */
     public function display()
@@ -116,7 +115,17 @@ class EverVote
             $evervotes =  (int) $meta[0];
         }
 
-        include_once $this->pluginBaseDir . '/templates/evervote-client.php';
+        $templateDir = get_template_directory();
+        $virtualFile = $templateDir . '/evervote.php';
+
+        if (file_exists($virtualFile))
+        {
+            include $virtualFile;
+        }
+        else
+        {
+            include $this->pluginBaseDir . '/templates/evervote-client.php';
+        }
     }
 
     /**
