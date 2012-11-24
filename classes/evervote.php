@@ -116,9 +116,6 @@ class EverVote
             $evervotes =  (int) $meta[0];
         }
 
-        echo "<pre>";
-        var_dump($_COOKIE);
-        echo "</pre>";
         include_once $this->pluginBaseDir . '/templates/evervote-client.php';
     }
 
