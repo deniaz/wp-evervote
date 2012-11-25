@@ -1,9 +1,9 @@
 <?php
 
 /**
- * SessionLog Class
+ * SessionCheck Class
  *
- * SessionLog, as the name suggests, does some logging in the PHP $_SESSION variable. 
+ * SessionCheck, as the name suggests, does some logging in the PHP $_SESSION variable. 
  * It is used by EverVote to check an IP address' usage and interval to prevent manipulation.
  *
  * @author Robert Vogt <robert.vogt@mind.ch>
@@ -12,7 +12,7 @@
  * @copyright Copyright 2012 MIND Kommunikation GmbH <www.mind.ch>
  * @version 0.1
  */
-class SessionLog
+class SessionCheck implements VoteCheck
 {
     /**
      * Singleton Instance
@@ -34,6 +34,13 @@ class SessionLog
      * @var int $posts
      */
     private $posts;
+
+    /**
+     * Client's IP address
+     *
+     * @var string $ip
+     */
+    private $ip;
 
     /**
      * STATE_NORMAL is the state if everthing's fine
@@ -86,15 +93,27 @@ class SessionLog
     }
 
     /**
-     * Add log entry
+     * Setter for $ip-member variable
+     *
+     * @param string $ip
+     * @return void
+     */
+    public function setIP($ip)
+    {
+        $this->ip = $ip;
+    }
+
+    /**
+     * Add Log entry and check for validity
      *
      * Adds or updates a log entry
      * 
-     * @param string $ip IP Address of Remote Host
      * @return bool true|false true if STATE_NORMAL, false if STATE_HARMFUL
      */
-    public function add($ip)
+    public function runCheck()
     {
+
+        $ip = $this->ip;
 
         if (!isset($this->map[$ip]))
         {
@@ -135,9 +154,9 @@ class SessionLog
 
         if ($this->map[$ip]['state'] === self::STATE_NORMAL)
         {
-            return true;
+            return self::STATE_NORMAL;
         }
 
-        return false;
+        return self::STATE_HARMFUL;
     }
 }

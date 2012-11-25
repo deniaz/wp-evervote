@@ -1,7 +1,9 @@
 <?php
 
-include_once('sessionlog.php');
-include_once('votetracker.php');
+include_once('votecheck.php');
+include_once('sessioncheck.php');
+include_once('postmetacheck.php');
+include_once('cookiecheck.php');
 
 /**
  * EverVote Class
@@ -36,6 +38,10 @@ class EverVote
      */
     private $pluginBaseUrl;
 
+    private $securityChecks = array();
+
+    public static $debug = true;
+
     /**
      * Meta Key for a post's meta data
      *
@@ -69,6 +75,44 @@ class EverVote
         add_action('init', array(&$this, 'includeScripts'));
     }
 
+    private function addSecurityChecks($postID)
+    {
+        $postMetaCheck = new PostMetaCheck($postID);
+        $postMetaCheck->setIP($_SERVER['REMOTE_ADDR']);
+
+        $this->securityChecks[] = array(
+            'test' => $postMetaCheck,
+            'expectedValue' => PostMetaCheck::NO_VOTES,
+            'error' => array(
+                'code' => 400,
+                'msg' => 'IP has already voted for this post.'
+                )
+            );
+
+        $sessionCheck = SessionCheck::getInstance();
+        $sessionCheck->setIP($_SERVER['REMOTE_ADDR']);
+
+        $this->securityChecks[] = array(
+            'test' => $sessionCheck,
+            'expectedValue' => SessionCheck::STATE_NORMAL,
+            'error' => array(
+                'code' => 400,
+                'msg' => 'Votes are being submitted to quickly or too many votes.'
+                )
+            );
+
+        $cookieCheck = new CookieCheck($postID);
+
+        $this->securityChecks[] = array(
+            'test' => $cookieCheck,
+            'expectedValue' => CookieCheck::NEW_VOTE,
+            'error' => array(
+                'code' => 400,
+                'msg' => 'User has already voted.'
+                )
+            );
+    }
+
     /**
      * Enqueues evervote.js and generates global NameSpace for AJAX URL
      *
@@ -89,6 +133,12 @@ class EverVote
                 'ajaxUrl' => admin_url('admin-ajax.php'),
                 'everVoteNonce' => wp_create_nonce('evervote-nonce')
                 )
+            );
+
+        wp_enqueue_script(
+            'md5-js',
+            $this->pluginBaseUrl . 'javascript/md5.js',
+            false
             );
 
         add_action('wp_ajax_evervote', array(&$this, 'ajaxCallback'));
@@ -138,26 +188,15 @@ class EverVote
     {
         $postID = $_POST['postID'];
 
-        $log = SessionLog::getInstance();
-        $check = $log->add($_SERVER['REMOTE_ADDR']);
+        $this->addSecurityChecks($postID);
 
-        if (!$check)
+        foreach ($this->securityChecks as $check)
         {
-            $this->cancelAjax(400);
+            if ($check['test']->runCheck() !== $check['expectedValue'])
+            {
+                $this->cancelAjax($check['error']['code'], $check['error']['msg']);
+            }
         }
-
-        $tracker = new VoteTracker($postID);
-        $tracker->setIP($_SERVER['REMOTE_ADDR']);
-        // TODO: FB & Twitter Integration
-        // $tracker->setFacebook(12345);
-        // $tracker->setFacebook(67890);
-
-        if ($tracker->hasVote() !== VoteTracker::NO_VOTES)
-        {
-            $this->cancelAjax(400);
-        }
-
-        $tracker->registerIP();
 
         if (!wp_verify_nonce($_POST['everVoteNonce'], 'evervote-nonce'))
         {
@@ -178,6 +217,7 @@ class EverVote
         header('Content-Type: application/json');
         $json = array(
             'msg' => 'Thanks for voting.',
+            'postID' => $postID,
             'votes' => $votes
         );
 
@@ -192,7 +232,7 @@ class EverVote
      * @param int $status HTTP Error Status
      * @return void
      */
-    private function cancelAjax($status)
+    private function cancelAjax($status, $msg = "Something went wrong. Please try again later.")
     {
         switch ($status)
         {
@@ -209,8 +249,13 @@ class EverVote
             break;
         }
 
+        if (!self::$debug)
+        {
+            $msg = "Something went wrong. Please try again later.";
+        }
+
         header('Content-Type: text/plain');
-        echo "Something went wrong. Please try again later.";
+        echo $msg;
         exit(0);
     }
 

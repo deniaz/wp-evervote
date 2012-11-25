@@ -1,7 +1,7 @@
 <?php
 
 /**
- * VoteTracker Class
+ * PostMetaCheck Class
  *
  * Tracks whether a client has voted for a specific post.
  * Data is saved 
@@ -12,7 +12,7 @@
  * @copyright Copyright 2012 MIND Kommunikation GmbH <www.mind.ch>
  * @version 0.1
  */
-class VoteTracker
+class PostMetaCheck implements VoteCheck
 {
 
     /**
@@ -79,7 +79,7 @@ class VoteTracker
     const TWT_USER_HAS_VOTED = 30;
 
     /**
-     * VoteTracker Constructor
+     * PostMetaCheck Constructor
      *
      * @param int $postID 
      */
@@ -134,7 +134,8 @@ class VoteTracker
         }
 
         $key = self::META_KEY . md5($this->ip);
-        add_post_meta($this->postID, $key, true);
+        // TODO - uncomment following line
+        //add_post_meta($this->postID, $key, true);
     }
 
     /**
@@ -169,12 +170,14 @@ class VoteTracker
      *
      * @return int either NO_VOTES, IP_HAS_VOTED, FB_USER_HAS_VOTED or TWT_USER_HAS_VOTED
      */
-    public function hasVote()
+    public function runCheck()
     {
         if (isset($this->ip))
         {
             $ipKey = self::META_KEY . md5($this->ip);
             $metaByIP = get_post_meta($this->postID, $ipKey);
+
+            $this->registerIP();
 
             if (!empty($metaByIP))
             {
@@ -187,6 +190,8 @@ class VoteTracker
             $fbKey = self::META_KEY . md5($this->fb);
             $metaByFB = get_post_meta($this->postID, $fbKey);
 
+            $this->registerFacebook();
+
             if (!empty($metaByFB))
             {
                 return self::FB_USER_HAS_VOTED;
@@ -197,6 +202,8 @@ class VoteTracker
         {
             $twtKey = self::META_KEY . md5($this->twitter);
             $metaByTwt = get_post_meta($this->postID, $twitter);
+
+            $this->registerTwitter();
 
             if (!empty($metaByTwt))
             {
