@@ -78,10 +78,10 @@
         </div>
         <div class="action">
             <?php
-                $tracker = new VoteTracker($postID);
+                $tracker = new PostMetaCheck($postID);
                 $tracker->setIP($_SERVER['REMOTE_ADDR']);
 
-                if ($tracker->hasVote() !== VoteTracker::NO_VOTES)
+                if ($tracker->runCheck() !== PostMetaCheck::NO_VOTES)
                 {
                     ?>
                     <button disabled="disabled">Vote!</button>
