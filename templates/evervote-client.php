@@ -4,7 +4,6 @@
 {
     background: #efefef;
     color: #999;
-    width: 10%;
     padding: 20px;
     text-align: center;
     border: 1px solid #999;
