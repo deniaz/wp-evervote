@@ -176,10 +176,9 @@ class PostMetaCheck implements VoteCheck
             $ipKey = self::META_KEY . md5($this->ip);
             $metaByIP = get_post_meta($this->postID, $ipKey);
 
-            $this->registerIP();
-
             if (!empty($metaByIP))
             {
+                $this->registerIP();
                 return self::IP_HAS_VOTED;
             }
         }
