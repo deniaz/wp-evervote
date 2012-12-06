@@ -123,6 +123,7 @@ class EverVote
         wp_enqueue_script(
             'evervote-js',
             $this->pluginBaseUrl . 'javascript/evervote.min.js',
+            array('jquery'),
             '1.0'
             );
 
