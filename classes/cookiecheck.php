@@ -27,9 +27,8 @@ class CookieCheck implements VoteCheck
             return self::ALREADY_VOTED;
         }
         
-        $expire = time() + 60*60*24*365; // 1 yer
-        // todo uncomment following line
-        //setcookie($key, true, $expire);
+        $expire = time() + 60*60*24*365;
+        setcookie($key, true, $expire);
         return self::NEW_VOTE;
     }
 }

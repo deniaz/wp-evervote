@@ -134,8 +134,7 @@ class PostMetaCheck implements VoteCheck
         }
 
         $key = self::META_KEY . md5($this->ip);
-        // TODO - uncomment following line
-        //add_post_meta($this->postID, $key, true);
+        add_post_meta($this->postID, $key, true);
     }
 
     /**

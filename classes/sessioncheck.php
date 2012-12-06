@@ -112,7 +112,6 @@ class SessionCheck implements VoteCheck
      */
     public function runCheck()
     {
-
         $ip = $this->ip;
 
         if (!isset($this->map[$ip]))
