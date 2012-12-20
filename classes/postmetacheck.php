@@ -174,11 +174,10 @@ class PostMetaCheck implements VoteCheck
         if (isset($this->ip))
         {
             $ipKey = self::META_KEY . md5($this->ip);
-            $metaByIP = get_post_meta($this->postID, $ipKey);
+            $metaByIP = get_post_meta($this->postID, $ipKey, true);
 
             if (!empty($metaByIP))
             {
-                $this->registerIP();
                 return self::IP_HAS_VOTED;
             }
         }
@@ -187,8 +186,6 @@ class PostMetaCheck implements VoteCheck
         {
             $fbKey = self::META_KEY . md5($this->fb);
             $metaByFB = get_post_meta($this->postID, $fbKey);
-
-            $this->registerFacebook();
 
             if (!empty($metaByFB))
             {
@@ -200,8 +197,6 @@ class PostMetaCheck implements VoteCheck
         {
             $twtKey = self::META_KEY . md5($this->twitter);
             $metaByTwt = get_post_meta($this->postID, $twitter);
-
-            $this->registerTwitter();
 
             if (!empty($metaByTwt))
             {

@@ -197,6 +197,11 @@ class EverVote
             {
                 $this->cancelAjax($check['error']['code'], $check['error']['msg']);
             }
+
+            if ($check['test'] instanceof PostMetaCheck)
+            {
+                $check['test']->registerIP();
+            }
         }
 
         if (!wp_verify_nonce($_POST['everVoteNonce'], 'evervote-nonce'))

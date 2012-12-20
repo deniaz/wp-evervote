@@ -1,7 +1,7 @@
 (function($, EverVoteConfig) {
 
     var Debug = {
-        isEnabled: true,
+        isEnabled: false,
         log: function(msg) {
             if (this.isEnabled && window.console != null) {
                 console.log(msg);
@@ -12,6 +12,7 @@
     function Storage(config) {
         Debug.log("-- Init Storage");
         this.identifier = config.postID;
+        this.everVote = config.everVote;
     };
 
     Storage.prototype.registerClient = function() {
@@ -24,7 +25,6 @@
     };
 
     Storage.prototype.getObfuscatedKey = function() {
-        Debug.log('-- Obfuscated Key.');
         var key = 'evervoted-client-' + this.identifier;
         return md5(key);
     };
@@ -69,7 +69,6 @@
                 );
 
             var postID = this.identifier;
-            console.log("HOI RÖBI: " + postID);
             this.db.transaction(function(tx) {
                 tx.executeSql("CREATE TABLE IF NOT EXISTS evervotes (wp_post_id)");
                 tx.executeSql("INSERT INTO evervotes (wp_post_id) VALUES (?)", [postID]);
@@ -124,14 +123,17 @@
                 [],
                 function (tx, results) {
                     var len = results.rows.length, i;
-                    // Check if there's sth
                     for (i = 0; i < len; i++) {
-                        console.log(results.rows.item(0));
+                        if (results.item(i).wp_post_id === this.identifier) {
+                            this.everVote.initAjax();
+                            break;
+                        }
                     }
                 });
             });
+        } else {
+            this.everVote.initAjax();
         }
-        return false;
     };
 
     Storage.prototype.hasVoted = function() {
@@ -141,8 +143,6 @@
             return true;
         } else if (this.checkCookie()) {
             return true;
-        } else if (this.checkDB()) {
-            return true;
         }
 
         return false;
@@ -150,6 +150,7 @@
 
     
     function EverVote(config) {
+        var that = this;
         Debug.log("-- Hi from EverVote!");
 
         this.button = config.button;
@@ -157,35 +158,33 @@
 
         // Test whether user is allowed to vote on this post
         if ($(this.button).length > 0) {
-            var storage = new Storage({
-                postID: $(this.button).attr('id')
+            this.storage = new Storage({
+                postID: $(this.button).attr('data-post-id'),
+                everVote: that
             });
 
-            if (!storage.hasVoted()) {
+            if (!this.storage.hasVoted()) {
                 this.addListeners();
             }
         }
     };
 
     EverVote.prototype.addListeners = function() {
+        Debug.log('-- Init Event Listeners | Activating EverVote');
         var that = this;
 
         $(this.button).removeAttr('disabled');
         $(this.button).live('click', {'scope': that}, that.createAjaxRequest);
     };
 
-    EverVote.prototype.createAjaxRequest = function(scope) {
-        var that = scope.data.scope,
-            btn = $(this);
-
-        Debug.log('-- EverVote Button was clicked');
-
+    EverVote.prototype.initAjax = function() {
+        var that = this;
         $.ajax({
             type: 'POST',
             url: EverVoteConfig.ajaxUrl,
             data: {
                 'action': 'evervote',
-                'postID': btn.attr('data-post-id'),
+                'postID': this.button.attr('data-post-id'),
                 'everVoteNonce': EverVoteConfig.everVoteNonce
             },
             success: function(data, status, xhr) {
@@ -208,6 +207,17 @@
                 Debug.log('-- Response: ' + xhr.responseText);
             }
         });
+    };
+
+    EverVote.prototype.createAjaxRequest = function(scope) {
+        var that = scope.data.scope,
+            btn = $(this);
+
+        Debug.log('-- EverVote Button was clicked');
+
+        that.initAjax();
+
+        //that.storage.checkDB();
     };
 
     $(document).ready(function() {
